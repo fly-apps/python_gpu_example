@@ -1,0 +1,9 @@
+app = "cgpu-allinone"
+primary_region = "ord"
+vm.size = "a100-40gb"
+
+# Use a volume to store LLMs or any big file that
+# doesn't fit in a Docker image
+[mounts]
+source = "data"
+destination = "/home/pythonuser"
