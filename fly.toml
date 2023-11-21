@@ -12,3 +12,4 @@ swap_size_mb = 32768    # This enables 32GB swap
 [mounts]
 source = "data"
 destination = "/home/pythonuser" # Make sure this matches the value of the NONROOT_USER build arg
+# initial_size = "200gb" # Uncomment to set the size for the volume created on first deployment
