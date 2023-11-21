@@ -5,8 +5,6 @@ VENV_DIR="$PROJECT_DIR-venv"
 
 echo "Running post-initialization script as $USER."
 echo "Entering $USER's home dir"
-# echo "Adding ~/.local/bin to PATH"
-# export PATH=$PATH:~/.local/bin
 cd ~
 echo "Creating venv dir for $PROJECT_DIR if it doesn't exist"
 mkdir -p $VENV_DIR 
@@ -22,22 +20,25 @@ source $VENV_DIR/bin/activate
 
 echo "Creating dir $PROJECT_DIR if it doesn't exist"
 mkdir -p $PROJECT_DIR && cd $PROJECT_DIR
-
+cp /requirements.txt .
 
 if pip show jupyter &> /dev/null; then
     echo "Jupyter is installed with pip."
 else
-    # echo "Adding ~/.local/bin to PATH in .bashrc"
-    # echo "export PATH=$PATH:~/.local/bin" > ~/.bashrc 
     echo "Installing packages with pip"
-    # Adapt the pip packages to match your project's needs. You can also install more after deployment. This Python venv lives on the persistent Fly Volume.
-    # For some reason numpy isn't getting installed as a dependency of torch, so install it explicitly
-    pip install jupyter # numpy torch 
+    # Adapt the pip packages to match your project's needs. You can also install more 
+    # after deployment. This Python venv lives on the persistent Fly Volume.
+    pip install -r requirements.txt
+
+    # Or install from scratch without a requirements.txt; some examples:
+    # pip install jupyter 
+    # pip install numpy torch # numpy isn't getting installed as a dep of torch so do it explicitly
     # pip install diffusers transformers accelerate # HuggingFace libs for specific projects
 fi
 
 echo "Starting Jupyter notebook server!"
-jupyter notebook --ip $FLY_PRIVATE_IP --no-browser 
-# If you don't want Jupyter, use `sleep inf` instead, and `fly ssh console` into the Machine to 
-# interact with it.
+jupyter notebook --ip $FLY_PRIVATE_IP --no-browser
+
+# If you don't want Jupyter, use the `sleep inf` command instead, and 
+# `fly ssh console` into the Machine to interact with it.
 # sleep inf

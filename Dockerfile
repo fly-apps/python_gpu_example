@@ -15,6 +15,7 @@ RUN useradd -ms /bin/bash $PYTHON_USER
 
 COPY --chmod=0755 ./entrypoint.sh ./entrypoint.sh
 COPY --chown=$PYTHON_USER:$PYTHON_USER --chmod=0755 ./post-initialization.sh ./post-initialization.sh
+COPY --chown=$PYTHON_USER:$PYTHON_USER requirements.txt .
 
 # CMD ["sleep", "inf"]
 CMD ["/bin/bash", "-c", "./entrypoint.sh $PYTHON_USER"]
