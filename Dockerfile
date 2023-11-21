@@ -8,8 +8,6 @@ ENV PYTHON_USER=$NONROOT_USER
 
 # Create unprivileged user with a home dir and using bash
 RUN useradd -ms /bin/bash $PYTHON_USER
-# RUN mkdir /app && chown $PYTHON_USER:$PYTHON_USER /app
-# WORKDIR /app
 
 COPY --chmod=0755 ./entrypoint.sh ./entrypoint.sh
 COPY --chown=$PYTHON_USER:$PYTHON_USER --chmod=0755 ./post-initialization.sh ./post-initialization.sh
