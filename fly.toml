@@ -2,8 +2,20 @@ app = "cgpu-allinone"
 primary_region = "ord"
 vm.size = "a100-40gb"
 
+#[[vm]]
+# memory = "64gb"
+ # cpus = 16
+#  cpu_kind = "performance"
+#  gpu_kind = "a100-pcie-40gb"
+  # gpu_kind = "a100-sxm4-80gb"
+
+[build]
+  [build.args]
+    NONROOT_USER = "pythonuser"
+
 # Use a volume to store LLMs or any big file that
 # doesn't fit in a Docker image
 [mounts]
 source = "data"
-destination = "/home/pythonuser"
+destination = "/home/pythonuser" # make sure this matches the value of the NONROOT_USER build arg
+initial_size = "20gb"
