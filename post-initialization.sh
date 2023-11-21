@@ -20,18 +20,22 @@ source $VENV_DIR/bin/activate
 
 echo "Creating dir $PROJECT_DIR if it doesn't exist"
 mkdir -p $PROJECT_DIR && cd $PROJECT_DIR
-cp /requirements.txt .
+# If you want to get project Python deps using requirements.txt, uncomment this and 
+# adjust the Dockerfile to copy the file into the image
+# cp /requirements.txt .
 
+# The following only installs pip packages if Jupyter isn't yet installed; 
+# essentially on first boot.
 if pip show jupyter &> /dev/null; then
     echo "Jupyter is installed with pip."
 else
     echo "Installing packages with pip"
-    # Adapt the pip packages to match your project's needs. You can also install more 
+    # Uncomment to use requirements.txt. You can also install more packages
     # after deployment. This Python venv lives on the persistent Fly Volume.
-    pip install -r requirements.txt
+    # pip install -r requirements.txt
 
-    # Or install from scratch without a requirements.txt; some examples:
-    # pip install jupyter 
+    # Install from scratch without a requirements.txt; some examples:
+    pip install jupyter 
     # pip install numpy torch # numpy isn't getting installed as a dep of torch so do it explicitly
     # pip install diffusers transformers accelerate # HuggingFace libs for specific projects
 fi
