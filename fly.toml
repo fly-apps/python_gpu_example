@@ -1,13 +1,7 @@
 app = "cgpu-allinone"
 primary_region = "ord"
 vm.size = "a100-40gb"
-
-#[[vm]]
-# memory = "64gb"
- # cpus = 16
-#  cpu_kind = "performance"
-#  gpu_kind = "a100-pcie-40gb"
-  # gpu_kind = "a100-sxm4-80gb"
+swap_size_mb = 32768
 
 [build]
   [build.args]
@@ -18,4 +12,3 @@ vm.size = "a100-40gb"
 [mounts]
 source = "data"
 destination = "/home/pythonuser" # make sure this matches the value of the NONROOT_USER build arg
-initial_size = "20gb"
