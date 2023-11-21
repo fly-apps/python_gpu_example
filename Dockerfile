@@ -6,8 +6,6 @@ ARG NONROOT_USER
 RUN echo "User will be $NONROOT_USER"
 ENV PYTHON_USER=$NONROOT_USER
 
-# SHELL ["/bin/bash", "-c"]
-
 # Create unprivileged user with a home dir and using bash
 RUN useradd -ms /bin/bash $PYTHON_USER
 # RUN mkdir /app && chown $PYTHON_USER:$PYTHON_USER /app
