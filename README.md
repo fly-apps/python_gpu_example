@@ -20,14 +20,45 @@ _Fly GPUs are only available to vetted orgs right now; join the waitlist_
 ### Deploy
  `fly deploy`
  
- The `fly deploy` command launches the app, provisioning initial resources on first run. In this case, 
+ The `fly deploy` command launches the app, provisioning initial resources on first run. In this case, it creates one Fly Machine VM and one Fly Volume. When an app is configured to use a volume, `fly deploy` does not create a redundant or standby Machine.
 
-## Fly-io-specific things
-Fly Launch doesn't have a scanner that will set this up just how we want, so the prep looks a lot like preparing a Docker container. We're configuring and running a Fly Machine instead, of course.
-* We'll use `fly deploy` to launch the Machine using configuration stored in the Fly Launch app config file, `fly.toml`.
+## Using the Machine
+
+### Jupyter notebook
+
+The easiest way to visit a private Fly App with the browser is with `fly proxy` command, which proxies a local port to a Machine.
+
+Run `fly logs` to find a line like 
+
+```
+http://127.0.0.1:8888/tree?token=c5fe8a87d8c00dd16637f0d4a1d8df7e3590c6a6064bbb6b
+```
+
+from Jupyter. Visit that link in the browser and you can start up a notebook.
+
+
+### Terminal
+
+Connect to the Machine using `fly ssh console`. To activate the configured venv, do the following:
+
+```
+# su pythonuser
+$ cd ~/project/
+$ source ~/project-venv/bin/activate 
+```
+
+Then you can install new pip packages to the persistent volume, download models, and run the Python REPL or execute scripts.
+
+To deactivate the venv, type `deactivate`. To drop back to the root user, hit <kbd>CTRL-D</kbd>.
+
+As the root user, you can use apt to manage system-wide software. Anything you install with apt is installed to the Machine's root file system, which means it disappears when the Machine next shuts down, so if you find yourself doing this, remember to add them to the Dockerfile, ready to be built into the image on the next deployment.
+
+## Fly.io-specific things
+Fly Launch doesn't have a scanner that will set this up just how we want, so the prep looks a lot like preparing a Docker container. We're configuring and running a Fly Machine instead, of course
+* We'll use `fly deploy` to launch the Machine using configuration stored in the Fly Launch app config file, `fly.toml`
 * Persistent storage is provided by a Fly Volume attached to the Machine
-* Fly GPU Machines come configured to use their GPU hardware, with NVIDIA drivers installed. You can launch a vanilla Ubuntu image and run nvidia-smi with no further setup.
-* This project makes use of Fly.io IPv6 private networking.
+* Fly GPU Machines come configured to use their GPU hardware, with NVIDIA drivers installed. You can launch a vanilla Ubuntu image and run nvidia-smi with no further setup
+* This project makes use of Fly.io IPv6 private networking. It could also be configured with a Fly Proxy service so it's available via a public Anycast or private Flycast IP address
 
 ## General considerations
 There's no one right way to set up a project like this. Here are some of the considerations that went into the example:
@@ -45,8 +76,7 @@ The compromise we use here is to generate a sub-1GB Docker image and store the p
 ### Compute
 The GPUs available at this time are a100-sxm4-80gb and a100-pcie-40gb, and you can use one GPU per Machine. We're not currently looking at model training on a massive scale; with careful design we can certainly do some reasonable inference. Here we're looking at running models manually so we'll stick with a single Machine, but an obvious use for Fly GPU Machines is as a "stateless" service for an app whose front end and any other components run on cheaper CPU-only Machines. This allows for horizontal scaling and traffic-based capacity scaling by starting and stopping Machines.
 
-At this time, Fly GPU Machines are provisioned with the `performance-8x` CPU config and 32GB RAM. Playing very crudely with a language model, I found it easy to out-of-memory kill my Jupyter (Python) kernel with 32GB of RAM. If you need more RAM and fastest performance, scale up with `fly scale memory`, but losing work is annoying, so it's worth enabling swap.
-
+At this time, Fly GPU Machines are provisioned with the `performance-8x` CPU config and 32GB RAM by default. Playing very crudely with a language model, I found it easy to out-of-memory kill my Jupyter (Python) kernel with 32GB of RAM. If you need more RAM and fastest performance, scale up with `fly scale memory`, but losing work is annoying, so it's worth enabling swap.
 
 ## Specifics
 
@@ -54,11 +84,11 @@ At this time, Fly GPU Machines are provisioned with the `performance-8x` CPU con
 The example `fly.toml` file does the following:
 
 * Sets the name of the app to deploy to 
-* Sets the app's primary region, where `fly deploy` will put the initial Machine. Deployment will fail if this region doesn't have GPUs available (or is out of capacity). 
+* Sets the app's primary region, where `fly deploy` will put the initial Machine. Deployment will fail if this region doesn't have GPUs available (or is out of capacity).
 * Specifies Machine resources (most crucially a GPU) using a preset (`a100-40gb`)
 * Configures swap
 * Sets a build argument that the Dockerfile uses to set the name of the non-root user
-* Configures a volume mount. `fly deploy` provisions a new volume on first run (or when there's no Machine or Volume present on the app). You can specify the size for the initial volume here if desired.
+* Configures a volume mount. `fly deploy` provisions a new volume on first run (or when there's no Machine or Volume present on the app). You can specify the size for the initial volume here if desired
 
 ### The Docker image
 
@@ -70,7 +100,7 @@ Here's a summary of what the Dockerfile does;
 
 * Uses Ubuntu 22.04 as a base image, as it's compatible with the NVIDIA drivers on Fly Machines
 * Installs system-wide packages with the apt package manager: python3, python3-pip, python3-venv, python3-wheel, git, nano (substitute your favourite terminal-compatible text editor here)
-* Adds a non-root user to own the Python venv and run things. Gets the name for this user from a `[build.arg]` set in `fly.toml`.
+* Adds a non-root user to own the Python venv and run things. Gets the name for this user from a `[build.arg]` set in `fly.toml`
 * Copies the scripts for root and the user to run at startup
 * CMD invokes the first script with the non-root user name as argument
 
@@ -91,11 +121,10 @@ This script, `post-initialization.sh`, runs as the non-root user. It activates a
 * Ensures there's a dir called `~/project` with a Python virtual environment created
 * Activates this venv
 * Uses the presence or absence of the `jupyter` pip package as a proxy for whether it's the first run or not (if there was a venv, then it's not the first run, but it checks anyway). If Jupyter isn't installed, it installs it. Tailor this to whatever pip packages you want. If you want to run Jupyter on boot, `jupyter` is the only package you absolutely need here. You can install more pip packages persistently straight from the Jupyter notebook interface.
-
+* Starts a Jupyter server on the Machine's private IPv6 address so it's only accessible using Fly.io private networking--i.e. over a WireGuard connection (including user-mode WireGuard with the `fly proxy` command)
+  
 This example project is meant to be a transparent template you can build on. Tailor this script to install different packages, use different directories, install from `requirements.txt`, or even skip Jupyter and use the `sleep inf` command to keep the Machine running so you can `fly ssh console` in and just work from the terminal or the Python REPL.
 
 ## Files
 
 https://github.com/fly-apps/python_gpu_example.git
-
-
