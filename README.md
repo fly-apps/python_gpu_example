@@ -2,7 +2,7 @@
 
 The goal: a CUDA-enabled Python template environment on a Fly GPU Machine, for working with ML models.
 
-We'll start with a minimal Ubuntu Linux, add a non-root user, and set up a Python virtual environment for a project. 
+We'll start with a minimal Ubuntu Linux, add a non-root user, and set up a Python virtual environment for a project, with NVIDIA libraries and Jupyter Notebook installed. 
 
 _Fly GPUs are only available to vetted orgs right now; join the waitlist_
 
